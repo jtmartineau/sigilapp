@@ -1,0 +1,82 @@
+# SigilApp - Project Instructions
+
+## 1. Environment Setup (First Time Only)
+We have set up a portable Android SDK in the `_dev_tools` folder. 
+To use it, you must load the environment variables in any new terminal window where you want to run Android tools or Flutter.
+
+```bash
+source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+```
+
+---
+
+## 2. Start the Backend (Terminal 1)
+The backend manages the database and logic. It must be running for the app to log in.
+
+```bash
+cd backend
+# If port 8000 is busy, see Debugging section below
+poetry run python manage.py runserver 0.0.0.0:8000
+```
+
+---
+
+## 3. Start the Android Emulator (Terminal 2)
+Since we are using a portable SDK, use these commands to wake up the "SigilPhone".
+
+```bash
+# 1. Load the SDK tools
+source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+
+# 2. Launch the Emulator (run in background) with Hardware Acceleration
+# This specific command disables audio/boot animations for speed and uses KVM
+emulator -avd SigilPhone -accel on -gpu host -no-audio -no-boot-anim &
+```
+
+*Note: If the emulator window does not appear or crashes with `-gpu host`, try replacing `-gpu host` with `-gpu swiftshader_indirect`.*
+
+*Wait about 30-60 seconds for the emulator to fully boot.*
+
+---
+
+## 4. Run the Mobile App (Terminal 2 or 3)
+Once the emulator is running (check with `flutter devices`), launch the app.
+
+```bash
+cd mobile
+# Ensure SDK variables are loaded
+source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+
+flutter pub get
+flutter run
+```
+
+---
+
+## 5. Common Debugging Steps
+
+### Port 8000 is "Already in Use"
+If the backend fails to start because the address is in use, run this to kill the old process:
+```bash
+fuser -k 8000/tcp
+```
+
+### Emulator is "Offline" or Not Found
+1. Ensure you ran `source .../env_vars.sh`.
+2. Check if the emulator process is running: `ps aux | grep emulator`.
+3. Try launching it again with the full command in Section 3.
+
+### "Connection Refused" in the App
+If the app cannot talk to the backend:
+1. Ensure the Django server is running.
+2. If using the Android Emulator, the code must connect to `10.0.2.2:8000` (this is the default).
+3. If using a Physical Phone, update `lib/services/api_service.dart` to use your computer's LAN IP (e.g., `192.168.1.X:8000`).
+
+### Resetting the Database
+If you need to wipe all data and start fresh:
+```bash
+cd backend
+rm db.sqlite3
+poetry run python manage.py migrate
+poetry run python manage.py createsuperuser
+```

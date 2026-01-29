@@ -1,16 +1,15 @@
-[project]
+[tool.poetry]
 name = "sigil-backend"
 version = "0.1.0"
 description = "Django backend for SigilApp"
-authors = [
-    {name = "Jason Thorgny Martineau"}
-]
-requires-python = ">=3.12"
-dependencies = [
-    "django (>=6.0.1,<7.0.0)",
-    "djangorestframework (>=3.16.1,<4.0.0)"
-]
+authors = ["Jason Thorgny Martineau"]
+package-mode = false
 
+[tool.poetry.dependencies]
+python = ">=3.12, <4.0"
+django = ">=6.0.1,<7.0.0"
+djangorestframework = ">=3.16.1,<4.0.0"
+djoser = ">=2.3.3,<3.0.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
