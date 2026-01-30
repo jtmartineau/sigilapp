@@ -51,11 +51,20 @@ class _IncantationStepState extends State<IncantationStep> {
           ),
         ),
         const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: _hasText
-              ? () => widget.onIncantationConfirmed(_controller.text)
-              : null,
-          child: const Text('USE THIS INCANTATION'),
+        Center(
+          child: TextButton(
+            onPressed: _hasText
+                ? () => widget.onIncantationConfirmed(_controller.text)
+                : null,
+            child: Text(
+              'USE THIS INCANTATION',
+              style: TextStyle(
+                color: _hasText ? const Color(0xFFFFD700) : Colors.grey,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
         ),
       ],
     );

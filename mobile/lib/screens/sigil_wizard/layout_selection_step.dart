@@ -67,7 +67,7 @@ class _LayoutSelectionStepState extends State<LayoutSelectionStep> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).colorScheme.primary),
+              // border removed as requested
               borderRadius: BorderRadius.circular(12),
             ),
             child: CustomPaint(
@@ -82,41 +82,45 @@ class _LayoutSelectionStepState extends State<LayoutSelectionStep> {
           ),
         ),
         const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                // Try again logic is actually handled by parent (resetting step),
-                // but requirements say "try again" button appears.
-                // In my main screen logic, "Try Again" is actually going BACK to this step
-                // from the drawing step.
-                // But inside this step, we are just configuring.
-                // Wait, requirements: "Once the incantation is automatically processed, a menu will appear...
-                // When the selected display is then rendered... two buttons... become un-grayed... 'try again' ... 'use this layout'"
-
-                // "Try again" in this context implies re-doing the Incantation?
-                // Or re-doing the layout choice?
-                // "If the user selects 'try again' the app will return the flow that allows them to select a circle or a polygon."
-                // This implies "Try Again" is available AFTER they see the layout.
-                // My UI updates instantly, so "Try Again" effectively just means "Don't confirm yet".
-
-                // I will add a "Back" button here to go to Incantation?
-                // Or just keep it as is.
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-              child: const Text('BACK'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                widget.onLayoutConfirmed(
-                  _selectedLayout,
-                  _polygonSides.toInt(),
-                );
-              },
-              child: const Text('USE THIS LAYOUT'),
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 20,
+            runSpacing: 10,
+            children: [
+              TextButton(
+                onPressed: () {
+                  // Back logic...
+                },
+                child: const Text(
+                  'BACK',
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  widget.onLayoutConfirmed(
+                    _selectedLayout,
+                    _polygonSides.toInt(),
+                  );
+                },
+                child: const Text(
+                  'USE THIS LAYOUT',
+                  style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

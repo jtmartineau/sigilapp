@@ -12,6 +12,24 @@ class AuthService with ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
 
+  Future<bool> signup(String username, String password, String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/users/'),
+        body: {'username': username, 'password': password, 'email': email},
+      );
+
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        debugPrint('Signup failed: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Signup error: $e');
+    }
+    return false;
+  }
+
   Future<bool> login(String username, String password) async {
     try {
       final response = await http.post(

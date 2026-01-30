@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../services/auth_service.dart';
-import '../../services/api_service.dart';
+import '../../utils/sigil_processor.dart';
 import 'incantation_step.dart';
 import 'layout_selection_step.dart';
 import 'drawing_step.dart';
@@ -25,22 +23,13 @@ class _SigilCreationScreenState extends State<SigilCreationScreen> {
   // Drawing State
   // We'll pass these down to the DrawingStep
 
-  final ApiService _apiService = ApiService();
-
-  void _processIncantation(String text) async {
+  void _processIncantation(String text) {
     setState(() {
       _incantation = text;
     });
 
-    // Show loading?
-
     try {
-      final token = context.read<AuthService>().token;
-      // In a real scenario, we'd handle the case where token is null
-      final result = await _apiService.processIncantation(
-        text,
-        token ?? 'mock_token',
-      );
+      final result = SigilProcessor.processIncantation(text);
 
       setState(() {
         _consonants = result;
@@ -70,7 +59,7 @@ class _SigilCreationScreenState extends State<SigilCreationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Sigil')),
+      appBar: AppBar(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

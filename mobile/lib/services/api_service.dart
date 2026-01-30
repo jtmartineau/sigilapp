@@ -1,11 +1,47 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'auth_service.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator to access localhost
   static const String baseUrl = 'http://10.0.2.2:8000/api';
+
+  Future<void> uploadSigil(
+    String incantation,
+    File imageFile,
+    bool isBurned,
+    String? token, {
+    double? lat,
+    double? long,
+    double? burnedLat,
+    double? burnedLong,
+  }) async {
+    final url = Uri.parse('$baseUrl/sigils/');
+    var request = http.MultipartRequest('POST', url);
+
+    if (token != null) {
+      request.headers['Authorization'] = 'Token $token';
+    }
+
+    request.fields['incantation'] = incantation;
+    request.fields['is_burned'] = isBurned.toString();
+
+    if (lat != null) request.fields['lat'] = lat.toString();
+    if (long != null) request.fields['long'] = long.toString();
+    if (burnedLat != null) request.fields['burned_lat'] = burnedLat.toString();
+    if (burnedLong != null)
+      request.fields['burned_long'] = burnedLong.toString();
+
+    request.files.add(
+      await http.MultipartFile.fromPath('image', imageFile.path),
+    );
+
+    var response = await request.send();
+    if (response.statusCode != 201) {
+      final respStr = await response.stream.bytesToString();
+      throw Exception('Failed to upload sigil: $respStr');
+    }
+  }
 
   Future<List<String>> processIncantation(
     String incantation,

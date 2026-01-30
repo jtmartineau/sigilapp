@@ -51,7 +51,6 @@ class SigilDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sigil Detail'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -64,10 +63,6 @@ class SigilDetailScreen extends StatelessWidget {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 clipBehavior: Clip.antiAlias,
@@ -76,37 +71,59 @@ class SigilDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              sigil.incantation,
-              style: Theme.of(context).textTheme.headlineSmall,
+              '"${sigil.incantation}"',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: const Color(0xFF6A1B9A), // Deep Purple
+                fontStyle: FontStyle.italic,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              "Created on: ${sigil.dateCreated.toString().split(' ')[0]}",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              spacing: 20,
+              runSpacing: 10,
               children: [
-                ElevatedButton.icon(
+                TextButton.icon(
                   onPressed: () => _handleBurn(context),
-                  icon: const Icon(Icons.local_fire_department),
-                  label: const Text('DIGITALLY BURN'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  icon: const Icon(
+                    Icons.local_fire_department,
+                    color: Color(0xFFC5A000),
+                  ),
+                  label: const Text(
+                    'DIGITALLY BURN',
+                    style: TextStyle(
+                      color: Color(0xFFC5A000),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
-                ElevatedButton.icon(
+                TextButton.icon(
                   onPressed: () => _handleShare(context),
-                  icon: const Icon(Icons.share),
-                  label: const Text('SHARE'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                  icon: const Icon(Icons.share, color: Color(0xFFC5A000)),
+                  label: const Text(
+                    'SHARE',
+                    style: TextStyle(
+                      color: Color(0xFFC5A000),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Back to Dashboard'),
+              child: const Text(
+                'Back to Dashboard',
+                style: TextStyle(
+                  color: Color(0xFFC5A000),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ],
         ),

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Added
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
+import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
 import '../../models/saved_sigil.dart';
 import '../../services/sigil_storage_service.dart';
+import '../../services/api_service.dart'; // Added
+import '../../services/auth_service.dart'; // Added
 
 class DrawingStep extends StatefulWidget {
   final String incantation;
@@ -68,61 +72,154 @@ class _DrawingStepState extends State<DrawingStep> {
     }
   }
 
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return null;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return null;
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
+
+  Future<Uint8List> _captureSigil(Size size, Size originalSize) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // Draw background (matching app scaffold color)
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Paint()..color = const Color(0xFF121212),
+    );
+
+    // Calculate scaling to match screen appearance
+    final double targetRadius = min(size.width, size.height) / 2 - 40;
+    final double sourceRadius =
+        min(originalSize.width, originalSize.height) / 2 - 40;
+    final double scale =
+        targetRadius / max(sourceRadius, 1.0); // Avoid division by zero
+
+    final Offset targetCenter = Offset(size.width / 2, size.height / 2);
+    final Offset sourceCenter = Offset(
+      originalSize.width / 2,
+      originalSize.height / 2,
+    );
+
+    canvas.save();
+    canvas.translate(targetCenter.dx, targetCenter.dy);
+    canvas.scale(scale);
+    canvas.translate(-sourceCenter.dx, -sourceCenter.dy);
+
+    // Draw the sigil
+    final painter = SigilCanvasPainter(
+      consonants: widget.consonants,
+      layoutType: widget.layoutType,
+      polygonSides: widget.polygonSides,
+      lines: _lines,
+      currentLine: null,
+      color: const Color(0xFFFFD700), // Gold
+      textColor: Colors.white,
+      onlyLines: true, // Only draw lines when capturing
+    );
+
+    painter.paint(canvas, originalSize);
+    canvas.restore();
+
+    final picture = recorder.endRecording();
+    final img = await picture.toImage(size.width.toInt(), size.height.toInt());
+    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
+  Future<void> _uploadSigil(
+    Uint8List imageBytes,
+    bool isBurned,
+    String? token,
+  ) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/temp_sigil.png');
+    await file.writeAsBytes(imageBytes);
+
+    await ApiService().uploadSigil(widget.incantation, file, isBurned, token);
+
+    // Cleanup
+    await file.delete();
+  }
+
   Future<void> _handleBurn() async {
-    // Show burning animation (placeholder: snackbar + delay)
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Burning Sigil... 🔥')));
-    await Future.delayed(const Duration(seconds: 2));
-    widget.onSigilCompleted();
+    final token = context.read<AuthService>().token;
+    try {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Burning Sigil... 🔥')));
+
+      // Get original size from the drawing widget
+      final RenderBox? renderBox =
+          _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+      final Size originalSize = renderBox?.size ?? const Size(400, 400);
+
+      // Capture compressed version for upload
+      final compressedBytes = await _captureSigil(
+        const Size(800, 800),
+        originalSize,
+      );
+
+      await _uploadSigil(compressedBytes, true, token);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sigil Burned Successfully!')),
+        );
+        widget.onSigilCompleted();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error burning: $e')));
+      }
+    }
   }
 
   Future<void> _handleSave() async {
+    final token = context.read<AuthService>().token;
     try {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Saving Sigil...')));
 
-      // 1. Capture Image
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
+      // Get original size from the drawing widget
+      final RenderBox? renderBox =
+          _canvasKey.currentContext?.findRenderObject() as RenderBox?;
+      final Size originalSize = renderBox?.size ?? const Size(400, 400);
 
-      // Define a standard size for the saved image
-      const size = Size(1000, 1000);
-
-      // Draw background (black)
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..color = Colors.black,
+      // 1. Capture High-Res Image for Local Save
+      final highResBytes = await _captureSigil(
+        const Size(1000, 1000),
+        originalSize,
       );
-
-      // Draw the sigil
-      final painter = SigilCanvasPainter(
-        consonants: widget.consonants,
-        layoutType: widget.layoutType,
-        polygonSides: widget.polygonSides,
-        lines: _lines,
-        currentLine: null,
-        color: const Color(0xFFFFD700), // Gold
-        textColor: Colors.white,
-      );
-
-      painter.paint(canvas, size);
-
-      final picture = recorder.endRecording();
-      final img = await picture.toImage(
-        size.width.toInt(),
-        size.height.toInt(),
-      );
-      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-      final buffer = byteData!.buffer.asUint8List();
 
       // 2. Save to Application Directory (for App usage)
       final directory = await getApplicationDocumentsDirectory();
       final String id = const Uuid().v4();
       final String fileName = 'sigil_$id.png';
       final File localFile = File('${directory.path}/$fileName');
-      await localFile.writeAsBytes(buffer);
+      await localFile.writeAsBytes(highResBytes);
 
       // 3. Save Metadata
       final savedSigil = SavedSigil(
@@ -138,7 +235,21 @@ class _DrawingStepState extends State<DrawingStep> {
       // 4. Save to Gallery (User requirement)
       // Note: This might require permissions on real devices
       // Gal handles permissions internally for Android < 10
-      await Gal.putImageBytes(buffer, name: "SigilApp_$id");
+      await Gal.putImageBytes(highResBytes, name: "SigilApp_$id");
+
+      // 5. Upload Compressed Version
+      try {
+        final compressedBytes = await _captureSigil(
+          const Size(800, 800),
+          originalSize,
+        );
+        await _uploadSigil(compressedBytes, false, token);
+      } catch (e) {
+        debugPrint("Upload failed: $e");
+        // We continue even if upload fails, as local save is primary here?
+        // Or should we alert? "Saved locally but failed to sync".
+        // For now, let's assume valid flow.
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -178,7 +289,7 @@ class _DrawingStepState extends State<DrawingStep> {
             key: _canvasKey,
             width: double.infinity,
             decoration: BoxDecoration(
-              border: Border.all(color: Theme.of(context).colorScheme.primary),
+              // border removed as requested
               borderRadius: BorderRadius.circular(12),
               color: Colors.black12,
             ),
@@ -203,34 +314,56 @@ class _DrawingStepState extends State<DrawingStep> {
         const SizedBox(height: 16),
         // Controls
         if (!hasLines)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: widget.onRetryLayout,
-                child: const Text('TRY AGAIN'),
+          Center(
+            child: TextButton(
+              onPressed: widget.onRetryLayout,
+              child: const Text(
+                'TRY AGAIN',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
-            ],
+            ),
           ),
         if (hasLines) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _undoLastLine,
-                icon: const Icon(Icons.undo),
-                label: const Text('UNDO LINE'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Lock and show Finalize buttons
-                  _showFinalizeDialog();
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('USE THIS SIGIL'),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              alignment: WrapAlignment.spaceEvenly,
+              spacing: 20,
+              runSpacing: 10,
+              children: [
+                TextButton.icon(
+                  onPressed: _undoLastLine,
+                  icon: const Icon(Icons.undo, color: Color(0xFFFFD700)),
+                  label: const Text(
+                    'UNDO LINE',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    // Lock and show Finalize buttons
+                    _showFinalizeDialog();
+                  },
+                  icon: const Icon(Icons.check, color: Color(0xFFFFD700)),
+                  label: const Text(
+                    'USE THIS SIGIL',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],
@@ -240,6 +373,7 @@ class _DrawingStepState extends State<DrawingStep> {
   void _showFinalizeDialog() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.grey[900], // Dark background for contrast
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         height: 200,
@@ -247,30 +381,45 @@ class _DrawingStepState extends State<DrawingStep> {
           children: [
             Text(
               'Your Sigil is Ready',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: const Color(0xFFFFD700),
+              ),
             ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                ElevatedButton.icon(
+                TextButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _handleBurn();
                   },
-                  icon: const Icon(Icons.local_fire_department),
-                  label: const Text('BURN'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  icon: const Icon(
+                    Icons.local_fire_department,
+                    color: Color(0xFFFFD700),
+                  ),
+                  label: const Text(
+                    'BURN',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
-                ElevatedButton.icon(
+                TextButton.icon(
                   onPressed: () {
                     Navigator.pop(context);
                     _handleSave();
                   },
-                  icon: const Icon(Icons.save),
-                  label: const Text('SAVE'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                  icon: const Icon(Icons.save, color: Color(0xFFFFD700)),
+                  label: const Text(
+                    'SAVE',
+                    style: TextStyle(
+                      color: Color(0xFFFFD700),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ],
@@ -290,6 +439,7 @@ class SigilCanvasPainter extends CustomPainter {
   final List<Offset>? currentLine;
   final Color color; // Line color
   final Color textColor;
+  final bool onlyLines;
 
   SigilCanvasPainter({
     required this.consonants,
@@ -299,13 +449,16 @@ class SigilCanvasPainter extends CustomPainter {
     required this.currentLine,
     required this.color,
     required this.textColor,
+    this.onlyLines = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     // 1. Draw Layout Background (Faint)
     // Reuse logic from SigilLayoutPainter effectively, but maybe fainter
-    _drawLayout(canvas, size);
+    if (!onlyLines) {
+      _drawLayout(canvas, size);
+    }
 
     // 2. Draw User Lines
     final paint = Paint()

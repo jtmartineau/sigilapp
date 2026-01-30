@@ -39,7 +39,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -49,7 +49,14 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 );
               },
-              child: const Text('UPDATE EMAIL'),
+              child: const Text(
+                'UPDATE EMAIL',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
             const Divider(height: 32),
             const Text('Change Password'),
@@ -63,7 +70,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -73,23 +80,41 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 );
               },
-              child: const Text('UPDATE PASSWORD'),
+              child: const Text(
+                'UPDATE PASSWORD',
+                style: TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
             const Divider(height: 32),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 // Show confirmation dialog
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Delete Account?'),
+                    backgroundColor: Colors.grey[900],
+                    title: const Text(
+                      'Delete Account?',
+                      style: TextStyle(color: Color(0xFFFFD700)),
+                    ),
                     content: const Text(
                       'This action cannot be undone. All your sigils will be lost.',
+                      style: TextStyle(color: Colors.white70),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('CANCEL'),
+                        child: const Text(
+                          'CANCEL',
+                          style: TextStyle(
+                            color: Color(0xFFFFD700),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -98,20 +123,27 @@ class _AccountScreenState extends State<AccountScreen> {
                           Navigator.pop(context); // Close dialog
                           Navigator.pop(context); // Close Account Screen
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
+                        child: const Text(
+                          'DELETE',
+                          style: TextStyle(
+                            color: Colors
+                                .red, // Keep red for danger, but text style
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        child: const Text('DELETE'),
                       ),
                     ],
                   ),
                 );
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+              child: const Text(
+                'DELETE ACCOUNT',
+                style: TextStyle(
+                  color: Colors.red, // Keep red for danger
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
-              child: const Text('DELETE ACCOUNT'),
             ),
           ],
         ),

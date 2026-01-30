@@ -5,7 +5,7 @@ We have set up a portable Android SDK in the `_dev_tools` folder.
 To use it, you must load the environment variables in any new terminal window where you want to run Android tools or Flutter.
 
 ```bash
-source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+source /mnt/md0/_dev_tools/env_vars.sh
 ```
 
 ---
@@ -25,15 +25,17 @@ poetry run python manage.py runserver 0.0.0.0:8000
 Since we are using a portable SDK, use these commands to wake up the "SigilPhone".
 
 ```bash
-# 1. Load the SDK tools
-source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+# 1. Load the SDK tools (Required for flutter/adb)
+source /mnt/md0/_dev_tools/env_vars.sh
 
-# 2. Launch the Emulator (run in background) with Hardware Acceleration
-# This specific command disables audio/boot animations for speed and uses KVM
-emulator -avd SigilPhone -accel on -gpu host -no-audio -no-boot-anim &
+# 2. Launch the Emulator (run in background)
+# We use the full path to ensure it runs correctly.
+# -gpu swiftshader_indirect: Uses software rendering (CPU) to prevent crashes when saving images.
+/mnt/md0/_dev_tools/android-sdk/emulator/emulator -avd SigilPhone -accel on -gpu swiftshader_indirect -no-audio -no-boot-anim &
 ```
 
-*Note: If the emulator window does not appear or crashes with `-gpu host`, try replacing `-gpu host` with `-gpu swiftshader_indirect`.*
+*Note: If you need to factory reset the emulator (clear all data), add the `-wipe-data` flag:*
+`/mnt/md0/_dev_tools/android-sdk/emulator/emulator -avd SigilPhone -wipe-data -accel on -gpu swiftshader_indirect -no-audio &`
 
 *Wait about 30-60 seconds for the emulator to fully boot.*
 
@@ -45,7 +47,7 @@ Once the emulator is running (check with `flutter devices`), launch the app.
 ```bash
 cd mobile
 # Ensure SDK variables are loaded
-source /mnt/md0/sigilapp/_dev_tools/env_vars.sh
+source /mnt/md0/_dev_tools/env_vars.sh
 
 flutter pub get
 flutter run

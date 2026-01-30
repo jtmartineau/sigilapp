@@ -61,7 +61,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sigil Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -135,9 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-          ),
+          // border side removed as requested
         ),
         elevation: 4,
         child: Column(
@@ -166,10 +163,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  Text(
-                    _formatDate(sigil.dateCreated),
-                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),

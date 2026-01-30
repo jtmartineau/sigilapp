@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import 'signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleSignup() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      final success = await context.read<AuthService>().login(
-        _emailController.text,
+      final success = await context.read<AuthService>().signup(
+        _usernameController.text,
         _passwordController.text,
+        _emailController.text,
       );
 
       if (mounted) {
@@ -40,15 +42,14 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         if (success) {
-          // Navigation is handled by the wrapper in main.dart or here
-          // For now, let's just show a success message
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Login Successful!')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sign Up Successful! Please Login.')),
+          );
+          Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Login Failed')));
+          ).showSnackBar(const SnackBar(content: Text('Sign Up Failed')));
         }
       }
     }
@@ -57,6 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Create Account')),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -85,19 +87,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'SigilApp',
-                        style: Theme.of(context).textTheme.headlineLarge,
+                        'Join SigilApp',
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 32),
                       TextFormField(
-                        controller: _emailController,
+                        controller: _usernameController,
                         decoration: const InputDecoration(
                           labelText: 'Username',
                           prefixIcon: Icon(Icons.person),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your username';
+                            return 'Please enter a username';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
                           }
                           return null;
                         },
@@ -112,7 +129,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: true,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
+                            return 'Please enter a password';
+                          }
+                          if (value.length < 8) {
+                            return 'Password must be at least 8 characters';
                           }
                           return null;
                         },
@@ -121,46 +141,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: TextButton(
-                          onPressed: _isLoading ? null : _handleLogin,
+                          onPressed: _isLoading ? null : _handleSignup,
                           child: _isLoading
                               ? const CircularProgressIndicator(
                                   color: Color(0xFFFFD700),
                                 )
                               : const Text(
-                                  'ENTER',
+                                  'CREATE ACCOUNT',
                                   style: TextStyle(
                                     color: Color(0xFFFFD700),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          // Navigate to forgot password
-                        },
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(color: Color(0xFFFFD700)),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Create Account',
-                          style: TextStyle(
-                            color: Color(0xFFFFD700),
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                       ),
                     ],

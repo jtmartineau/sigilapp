@@ -10,6 +10,7 @@ python = ">=3.12, <4.0"
 django = ">=6.0.1,<7.0.0"
 djangorestframework = ">=3.16.1,<4.0.0"
 djoser = ">=2.3.3,<3.0.0"
+pillow = "^12.1.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
