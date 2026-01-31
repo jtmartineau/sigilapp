@@ -12,6 +12,7 @@ import '../../models/saved_sigil.dart';
 import '../../services/sigil_storage_service.dart';
 import '../../services/api_service.dart'; // Added
 import '../../services/auth_service.dart'; // Added
+import '../../services/location_service.dart'; // Added
 
 class DrawingStep extends StatefulWidget {
   final String incantation;
@@ -72,31 +73,6 @@ class _DrawingStepState extends State<DrawingStep> {
     }
   }
 
-  Future<Position?> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return null;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return null;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      return null;
-    }
-
-    return await Geolocator.getCurrentPosition();
-  }
-
   Future<Uint8List> _captureSigil(Size size, Size originalSize) async {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
@@ -149,13 +125,24 @@ class _DrawingStepState extends State<DrawingStep> {
   Future<void> _uploadSigil(
     Uint8List imageBytes,
     bool isBurned,
-    String? token,
-  ) async {
+    String? token, {
+    double? lat,
+    double? long,
+  }) async {
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/temp_sigil.png');
     await file.writeAsBytes(imageBytes);
 
-    await ApiService().uploadSigil(widget.incantation, file, isBurned, token);
+    await ApiService().uploadSigil(
+      widget.incantation,
+      file,
+      isBurned,
+      token,
+      lat: lat,
+      long: long,
+      burnedLat: isBurned ? lat : null,
+      burnedLong: isBurned ? long : null,
+    );
 
     // Cleanup
     await file.delete();
@@ -168,6 +155,8 @@ class _DrawingStepState extends State<DrawingStep> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Burning Sigil... 🔥')));
 
+      final position = await LocationService().getCurrentLocation(context);
+
       // Get original size from the drawing widget
       final RenderBox? renderBox =
           _canvasKey.currentContext?.findRenderObject() as RenderBox?;
@@ -179,7 +168,13 @@ class _DrawingStepState extends State<DrawingStep> {
         originalSize,
       );
 
-      await _uploadSigil(compressedBytes, true, token);
+      await _uploadSigil(
+        compressedBytes,
+        true,
+        token,
+        lat: position?.latitude,
+        long: position?.longitude,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -202,6 +197,8 @@ class _DrawingStepState extends State<DrawingStep> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Saving Sigil...')));
+
+      final position = await LocationService().getCurrentLocation(context);
 
       // Get original size from the drawing widget
       final RenderBox? renderBox =
@@ -243,7 +240,13 @@ class _DrawingStepState extends State<DrawingStep> {
           const Size(800, 800),
           originalSize,
         );
-        await _uploadSigil(compressedBytes, false, token);
+        await _uploadSigil(
+          compressedBytes,
+          false,
+          token,
+          lat: position?.latitude,
+          long: position?.longitude,
+        );
       } catch (e) {
         debugPrint("Upload failed: $e");
         // We continue even if upload fails, as local save is primary here?

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
 import '../models/saved_sigil.dart';
 import '../services/sigil_storage_service.dart';
+import '../services/auth_service.dart';
+import '../services/api_service.dart';
+import '../services/location_service.dart';
 
 class SigilDetailScreen extends StatelessWidget {
   final SavedSigil sigil;
@@ -15,6 +19,36 @@ class SigilDetailScreen extends StatelessWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Burning sigil... 🔥')));
+
+    // Attempt to notify backend
+    try {
+      final token = context.read<AuthService>().token;
+      // Use LocationService
+      final position = await LocationService().getCurrentLocation(context);
+
+      final file = File(sigil.imagePath);
+      if (await file.exists()) {
+        await ApiService().uploadSigil(
+          sigil.incantation,
+          file,
+          true, // isBurned
+          token,
+          lat: position?.latitude,
+          long: position?.longitude,
+          burnedLat: position?.latitude,
+          burnedLong: position?.longitude,
+        );
+        debugPrint('Sigil burn uploaded successfully.');
+      }
+    } catch (e) {
+      debugPrint('Error uploading burned sigil: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Offline burn (sync failed): $e')),
+        );
+      }
+    }
+
     await Future.delayed(const Duration(seconds: 2));
 
     // 2. Delete from Storage

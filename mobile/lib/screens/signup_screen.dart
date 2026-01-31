@@ -30,7 +30,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _isLoading = true;
       });
 
-      final success = await context.read<AuthService>().signup(
+      final error = await context.read<AuthService>().signup(
         _usernameController.text,
         _passwordController.text,
         _emailController.text,
@@ -41,7 +41,7 @@ class _SignupScreenState extends State<SignupScreen> {
           _isLoading = false;
         });
 
-        if (success) {
+        if (error == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sign Up Successful! Please Login.')),
           );
@@ -49,7 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
         } else {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Sign Up Failed')));
+          ).showSnackBar(SnackBar(content: Text(error)));
         }
       }
     }

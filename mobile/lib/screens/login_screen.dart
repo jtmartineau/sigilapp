@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      final success = await context.read<AuthService>().login(
+      final error = await context.read<AuthService>().login(
         _emailController.text,
         _passwordController.text,
       );
@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
 
-        if (success) {
+        if (error == null) {
           // Navigation is handled by the wrapper in main.dart or here
           // For now, let's just show a success message
           ScaffoldMessenger.of(
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('Login Failed')));
+          ).showSnackBar(SnackBar(content: Text(error)));
         }
       }
     }

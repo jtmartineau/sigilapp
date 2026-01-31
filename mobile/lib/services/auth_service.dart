@@ -12,7 +12,7 @@ class AuthService with ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   String? get token => _token;
 
-  Future<bool> signup(String username, String password, String email) async {
+  Future<String?> signup(String username, String password, String email) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/users/'),
@@ -20,17 +20,38 @@ class AuthService with ChangeNotifier {
       );
 
       if (response.statusCode == 201) {
-        return true;
+        return null; // Success
       } else {
-        debugPrint('Signup failed: ${response.body}');
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map<String, dynamic>) {
+            if (errorData.containsKey('username')) {
+              return errorData['username'][0];
+            }
+            if (errorData.containsKey('email')) {
+              return errorData['email'][0];
+            }
+            if (errorData.containsKey('password')) {
+              return errorData['password'][0];
+            }
+            if (errorData.containsKey('non_field_errors')) {
+              return errorData['non_field_errors'][0];
+            }
+            // Return the first value of the first key
+            return errorData.values.first.toString();
+          }
+          return 'Signup failed: ${response.body}';
+        } catch (_) {
+          return 'Signup failed: ${response.statusCode}';
+        }
       }
     } catch (e) {
       debugPrint('Signup error: $e');
+      return 'Connection error. Please check your internet.';
     }
-    return false;
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<String?> login(String username, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/token/login/'),
@@ -47,12 +68,26 @@ class AuthService with ChangeNotifier {
         await prefs.setString('auth_token', _token!);
 
         notifyListeners();
-        return true;
+        return null; // Success
+      } else {
+        try {
+          final errorData = json.decode(response.body);
+          if (errorData is Map<String, dynamic>) {
+            if (errorData.containsKey('non_field_errors')) {
+              return errorData['non_field_errors'][0];
+            }
+            // Return the first value of the first key
+            return errorData.values.first.toString();
+          }
+          return 'Login failed: ${response.body}';
+        } catch (_) {
+          return 'Login failed: ${response.statusCode}';
+        }
       }
     } catch (e) {
       debugPrint('Login error: $e');
+      return 'Connection error. Please check your internet.';
     }
-    return false;
   }
 
   Future<void> logout() async {

@@ -26,8 +26,8 @@ class ApiService {
     request.fields['incantation'] = incantation;
     request.fields['is_burned'] = isBurned.toString();
 
-    if (lat != null) request.fields['lat'] = lat.toString();
-    if (long != null) request.fields['long'] = long.toString();
+    if (lat != null) request.fields['created_lat'] = lat.toString();
+    if (long != null) request.fields['created_long'] = long.toString();
     if (burnedLat != null) request.fields['burned_lat'] = burnedLat.toString();
     if (burnedLong != null)
       request.fields['burned_long'] = burnedLong.toString();
