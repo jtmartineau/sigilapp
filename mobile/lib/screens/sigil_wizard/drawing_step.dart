@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // Added
+import '../../utils/sigil_processor.dart'; // Added
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -128,10 +129,17 @@ class _DrawingStepState extends State<DrawingStep> {
     String? token, {
     double? lat,
     double? long,
+    String? id,
   }) async {
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/temp_sigil.png');
     await file.writeAsBytes(imageBytes);
+
+    final assignment = SigilProcessor.assignLetters(
+      widget.consonants,
+      widget.layoutType,
+      widget.polygonSides,
+    );
 
     await ApiService().uploadSigil(
       widget.incantation,
@@ -142,6 +150,10 @@ class _DrawingStepState extends State<DrawingStep> {
       long: long,
       burnedLat: isBurned ? lat : null,
       burnedLong: isBurned ? long : null,
+      layoutType: widget.layoutType,
+      vertexCount: widget.polygonSides,
+      letterAssignment: assignment,
+      id: id,
     );
 
     // Cleanup
@@ -174,6 +186,7 @@ class _DrawingStepState extends State<DrawingStep> {
         token,
         lat: position?.latitude,
         long: position?.longitude,
+        id: const Uuid().v4(),
       );
 
       if (mounted) {
@@ -246,6 +259,7 @@ class _DrawingStepState extends State<DrawingStep> {
           token,
           lat: position?.latitude,
           long: position?.longitude,
+          id: id,
         );
       } catch (e) {
         debugPrint("Upload failed: $e");
@@ -528,17 +542,27 @@ class SigilCanvasPainter extends CustomPainter {
       }
       canvas.drawPath(path, layoutPaint);
 
-      for (int i = 0; i < consonants.length; i++) {
-        final vertexIndex = i % polygonSides;
-        final vertex = vertices[vertexIndex];
-        final groupIndex = i ~/ polygonSides;
-        final offsetAmount = 20.0 * groupIndex;
-        final angle = (2 * pi * vertexIndex) / polygonSides - (pi / 2);
-        final letterPos = Offset(
-          vertex.dx + (offsetAmount * cos(angle)),
-          vertex.dy + (offsetAmount * sin(angle)),
-        );
-        _drawLetter(canvas, textPainter, consonants[i], letterPos);
+      final groups = SigilProcessor.assignLetters(
+        consonants,
+        layoutType,
+        polygonSides,
+      );
+
+      for (int i = 0; i < groups.length; i++) {
+        if (i >= vertices.length) break;
+        final vertex = vertices[i];
+        final group = groups[i];
+        final angle = (2 * pi * i) / polygonSides - (pi / 2);
+
+        for (int j = 0; j < group.length; j++) {
+          final letter = group[j];
+          final offsetAmount = 25.0 * j;
+          final letterPos = Offset(
+            vertex.dx + (offsetAmount * cos(angle)),
+            vertex.dy + (offsetAmount * sin(angle)),
+          );
+          _drawLetter(canvas, textPainter, letter, letterPos);
+        }
       }
     }
   }

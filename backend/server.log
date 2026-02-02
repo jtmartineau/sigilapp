@@ -1,12 +1,38 @@
 Watching for file changes with StatReloader
-[31/Jan/2026 19:30:06] "POST /api/sigils/ HTTP/1.1" 201 372
-Performing system checks...
-
-System check identified no issues (0 silenced).
-January 31, 2026 - 19:30:02
-Django version 6.0.1, using settings 'config.settings'
-Starting development server at http://0.0.0.0:8000/
-Quit the server with CONTROL-C.
-
-WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
-For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/
+[02/Feb/2026 06:02:32] "GET /admin/ HTTP/1.1" 302 0
+[02/Feb/2026 06:02:32] "GET /admin/login/?next=/admin/ HTTP/1.1" 200 4080
+[02/Feb/2026 06:02:32] "GET /static/admin/css/login.css HTTP/1.1" 304 0
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:04:44] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:04:58] "POST /auth/token/login/ HTTP/1.1" 400 68
+[02/Feb/2026 06:05:38] "POST /auth/users/ HTTP/1.1" 201 51
+[02/Feb/2026 06:05:51] "POST /auth/token/login/ HTTP/1.1" 200 57
+[02/Feb/2026 06:06:12] "POST /api/sigils/ HTTP/1.1" 201 400
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:06:25] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:06:46] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:06:59] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:07:01] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:07:02] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:07:02] "POST /auth/token/login/ HTTP/1.1" 400 68
+Bad Request: /auth/token/login/
+[02/Feb/2026 06:07:20] "POST /auth/token/login/ HTTP/1.1" 400 68
+[02/Feb/2026 06:08:05] "POST /auth/users/ HTTP/1.1" 201 53
+[02/Feb/2026 06:08:20] "POST /auth/token/login/ HTTP/1.1" 200 57
+[02/Feb/2026 06:08:37] "POST /auth/token/login/ HTTP/1.1" 200 57
+Bad Request: /auth/users/
+[02/Feb/2026 06:12:30] "POST /auth/users/ HTTP/1.1" 400 42
+Bad Request: /auth/users/
+[02/Feb/2026 06:12:43] "POST /auth/users/ HTTP/1.1" 400 45
+[02/Feb/2026 06:12:57] "POST /auth/users/ HTTP/1.1" 201 45
+[02/Feb/2026 06:13:24] "POST /auth/users/ HTTP/1.1" 201 45
+[02/Feb/2026 06:13:36] "POST /auth/token/login/ HTTP/1.1" 200 57
+[02/Feb/2026 06:14:01] "POST /api/sigils/ HTTP/1.1" 201 378
+[02/Feb/2026 06:14:14] "POST /auth/token/login/ HTTP/1.1" 200 57
+[02/Feb/2026 06:18:18] "POST /auth/token/login/ HTTP/1.1" 200 57

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'sigil_storage_service.dart';
+import 'api_service.dart';
 
 class AuthService with ChangeNotifier {
   static const String baseUrl = 'http://10.0.2.2:8000';
@@ -67,6 +69,16 @@ class AuthService with ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', _token!);
 
+        // Fetch and sync sigils from backend
+        try {
+          final sigils = await ApiService().getSigils(_token!);
+          await SigilStorageService().syncSigils(sigils);
+        } catch (e) {
+          debugPrint('Error syncing sigils during login: $e');
+          // Start with fresh state if sync fails
+          await SigilStorageService().clearSigils();
+        }
+
         notifyListeners();
         return null; // Success
       } else {
@@ -96,6 +108,10 @@ class AuthService with ChangeNotifier {
     _token = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+
+    // Clear local data
+    await SigilStorageService().clearSigils();
+
     notifyListeners();
   }
 

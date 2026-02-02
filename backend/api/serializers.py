@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import Sigil
 
 class SigilSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(required=False)
+
     class Meta:
         model = Sigil
         fields = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/sigil_storage_service.dart';
 import '../models/saved_sigil.dart';
@@ -29,6 +30,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _isLoading = true;
     });
+
+    // Sync with API
+    try {
+      final token = context.read<AuthService>().token;
+      if (token != null) {
+        final apiSigils = await ApiService().getSigils(token);
+        await _storageService.syncSigils(apiSigils);
+      }
+    } catch (e) {
+      debugPrint('Sync failed: $e');
+    }
+
     final sigils = await _storageService.loadSigils();
     // Sort by date descending (newest first)
     sigils.sort((a, b) => b.dateCreated.compareTo(a.dateCreated));

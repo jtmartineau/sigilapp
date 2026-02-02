@@ -26,20 +26,14 @@ class SigilDetailScreen extends StatelessWidget {
       // Use LocationService
       final position = await LocationService().getCurrentLocation(context);
 
-      final file = File(sigil.imagePath);
-      if (await file.exists()) {
-        await ApiService().uploadSigil(
-          sigil.incantation,
-          file,
-          true, // isBurned
-          token,
-          lat: position?.latitude,
-          long: position?.longitude,
-          burnedLat: position?.latitude,
-          burnedLong: position?.longitude,
-        );
-        debugPrint('Sigil burn uploaded successfully.');
-      }
+      // Call the Burn endpoint (Update) instead of Upload (Create)
+      await ApiService().burnSigil(
+        sigil.id,
+        token,
+        burnedLat: position?.latitude,
+        burnedLong: position?.longitude,
+      );
+      debugPrint('Sigil burn synced successfully.');
     } catch (e) {
       debugPrint('Error uploading burned sigil: $e');
       if (context.mounted) {

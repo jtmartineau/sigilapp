@@ -54,10 +54,12 @@ def process_incantation(request):
 
 from django.utils import timezone
 
-class SigilCreateView(generics.CreateAPIView):
-    queryset = Sigil.objects.all()
+class SigilListCreateView(generics.ListCreateAPIView):
     serializer_class = SigilSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Sigil.objects.filter(user=self.request.user, is_burned=False).order_by('-created_at')
 
     def perform_create(self, serializer):
         # Debug: Print all incoming data keys to see what's actually arriving
@@ -75,6 +77,17 @@ class SigilCreateView(generics.CreateAPIView):
                 print(f"DEBUG: Failed to parse float for {key}: {val}")
                 return None
 
+        # Helper to safely parse ints from multipart strings
+        def parse_int(key, default=None):
+            val = self.request.data.get(key)
+            if val in [None, '', 'null']:
+                return default
+            try:
+                return int(val)
+            except (ValueError, TypeError):
+                print(f"DEBUG: Failed to parse int for {key}: {val}")
+                return default
+
         # 1. Handle is_burned (Fallback logic)
         is_burned = serializer.validated_data.get('is_burned')
         if is_burned is None:
@@ -91,18 +104,77 @@ class SigilCreateView(generics.CreateAPIView):
         burned_lat = parse_float('burned_lat')
         burned_long = parse_float('burned_long')
 
-        # 3. Calculate derived fields
+        # 3. Handle Layout Fields (Manual Extraction)
+        layout_type = self.request.data.get('layout_type', 'Unknown')
+        vertex_count = parse_int('vertex_count', -1)
+        letter_assignment = self.request.data.get('letter_assignment', '[]')
+        
+        # 4. Handle Client ID
+        # If client sends 'id' (UUID), we use it.
+        client_id = self.request.data.get('id')
+        if client_id in [None, '', 'null']:
+            client_id = None
+
+        # 5. Calculate derived fields
         burned_at = timezone.now() if is_burned else None
         
-        print(f"DEBUG: Saving - Burned: {is_burned}, C_Lat: {created_lat}, B_Lat: {burned_lat}")
+        print(f"DEBUG: Saving - Burned: {is_burned}, Layout: {layout_type}, Vertex: {vertex_count}")
 
         # Save the instance with explicit values
+        save_kwargs = {
+            'user': self.request.user, 
+            'burned_at': burned_at,
+            'is_burned': is_burned,
+            'created_lat': created_lat,
+            'created_long': created_long,
+            'burned_lat': burned_lat,
+            'burned_long': burned_long,
+            'layout_type': layout_type,
+            'vertex_count': vertex_count,
+            'letter_assignment': letter_assignment,
+        }
+        
+        if client_id:
+            save_kwargs['id'] = client_id
+
+        serializer.save(**save_kwargs)
+
+class BurnSigilView(generics.UpdateAPIView):
+    queryset = Sigil.objects.all()
+    serializer_class = SigilSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        # We expect 'is_burned' to be true, but let's check
+        raw_val = self.request.data.get('is_burned')
+        is_burned = False
+        if raw_val and str(raw_val).lower() in ['true', '1', 'on']:
+            is_burned = True
+        
+        burned_at = timezone.now() if is_burned else None
+        
+        # Extract location if provided
+        burned_lat = self.request.data.get('burned_lat')
+        burned_long = self.request.data.get('burned_long')
+        
+        # If passed as strings in JSON/Form
+        def parse_float(val):
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return None
+        
+        if burned_lat: burned_lat = parse_float(burned_lat)
+        if burned_long: burned_long = parse_float(burned_long)
+
         serializer.save(
-            user=self.request.user, 
-            burned_at=burned_at,
             is_burned=is_burned,
-            created_lat=created_lat,
-            created_long=created_long,
+            burned_at=burned_at,
             burned_lat=burned_lat,
             burned_long=burned_long
         )

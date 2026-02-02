@@ -25,6 +25,7 @@ def save_user_profile(sender, instance, **kwargs):
         Profile.objects.create(user=instance)
 
 class Sigil(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     incantation = models.TextField()
     image = models.ImageField(upload_to='sigils/')

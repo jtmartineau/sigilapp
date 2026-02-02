@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import '../../utils/sigil_processor.dart';
 
 class SigilLayoutPainter extends CustomPainter {
   final List<String> consonants;
@@ -61,29 +62,31 @@ class SigilLayoutPainter extends CustomPainter {
       canvas.drawPath(path, paint..color = color.withOpacity(0.3));
 
       // Draw letters at vertices
-      // "assigned ... to successive points"
-      for (int i = 0; i < consonants.length; i++) {
-        final vertexIndex = i % polygonSides;
-        final vertex = vertices[vertexIndex];
+      final groups = SigilProcessor.assignLetters(
+        consonants,
+        layoutType,
+        polygonSides,
+      );
 
-        // To avoid stacking text exactly on top of each other if multiple letters per vertex,
-        // we might need a slight offset or just stack them.
-        // Requirement says "displayed as groups ... around each point"
-        // Let's stack them slightly outward or just list them.
-
-        // Simple implementation: Just put them at the vertex.
-        // Better: Slight offset based on how many times we've visited this vertex?
-        final groupIndex = i ~/ polygonSides;
-        final offsetAmount = 20.0 * groupIndex;
+      for (int i = 0; i < groups.length; i++) {
+        if (i >= vertices.length) break;
+        final vertex = vertices[i];
+        final group = groups[i];
 
         // Calculate direction from center to vertex to push outward
-        final angle = (2 * pi * vertexIndex) / polygonSides - (pi / 2);
-        final letterPos = Offset(
-          vertex.dx + (offsetAmount * cos(angle)),
-          vertex.dy + (offsetAmount * sin(angle)),
-        );
+        final angle = (2 * pi * i) / polygonSides - (pi / 2);
 
-        _drawLetter(canvas, textPainter, consonants[i], letterPos);
+        for (int j = 0; j < group.length; j++) {
+          final letter = group[j];
+          final offsetAmount = 25.0 * j; // Stack/Spread outward
+
+          final letterPos = Offset(
+            vertex.dx + (offsetAmount * cos(angle)),
+            vertex.dy + (offsetAmount * sin(angle)),
+          );
+
+          _drawLetter(canvas, textPainter, letter, letterPos);
+        }
       }
     }
   }

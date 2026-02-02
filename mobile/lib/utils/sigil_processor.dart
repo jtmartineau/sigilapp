@@ -23,4 +23,37 @@ class SigilProcessor {
 
     return consonants;
   }
+
+  static List<List<String>> assignLetters(
+    List<String> letters,
+    String layoutType,
+    int sides,
+  ) {
+    if (layoutType == 'Circle' || sides < 2) {
+      return letters.map((l) => [l]).toList();
+    }
+
+    // Polygon: Sequential distribution (Chunking)
+    List<List<String>> result = List.generate(sides, (_) => []);
+
+    int total = letters.length;
+    if (total == 0) return result;
+
+    int baseCount = total ~/ sides;
+    int remainder = total % sides;
+
+    int currentLetterIdx = 0;
+    for (int i = 0; i < sides; i++) {
+      // Distribute remainder one by one to the first 'remainder' vertices
+      int count = baseCount + (i < remainder ? 1 : 0);
+      for (int j = 0; j < count; j++) {
+        if (currentLetterIdx < total) {
+          result[i].add(letters[currentLetterIdx]);
+          currentLetterIdx++;
+        }
+      }
+    }
+
+    return result;
+  }
 }
